@@ -126,7 +126,7 @@ response = model.chat.completions.create(
 print(response.choices[0].message.content) # 00:00 Hi, how are you doing? \n 00:02 I'm fine, how about yourself? \n 00:04 I'm pretty good. Thanks for asking.
 ```
 # Run Proxy Remotely
-If Gemini **blocked** in your region or you want to have a remote server, you can deploy repo on vercel.
+If Gemini **blocked** in your region or you want to have a remote server, you can deploy repo on vercel. But be warned that vercel file system is ephemeral (read-only) so **video processing is not available with vercel.**
 
 <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fobezbolen67%2Fopenai-to-gemini-proxy&project-name=my-openai-to-gemini-proxy&repository-name=my-openai-to-gemini-proxy"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
 
