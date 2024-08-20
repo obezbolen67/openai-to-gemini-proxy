@@ -17,7 +17,7 @@ node server.js
 
 ```
 ~$ node server.js
-Proxy server running on port 3000
+Proxy server running on port 3333
 ```
 
 # Usage
