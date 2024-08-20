@@ -1,0 +1,19 @@
+{
+  "name": "openai-to-gemini-proxy-main",
+  "version": "1.0.0",
+  "description": "OpenAI → Gemini Proxy (Supports Video/Audio/Image)",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npm i && node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.17.0",
+    "axios": "^1.7.4",
+    "express": "^4.19.2",
+    "fs": "^0.0.1-security"
+  }
+}
