@@ -25,7 +25,7 @@ My proxy provides **video**, **image** and **audio** input. For now you can send
 
 For use examples look [Examples Section](docs/README.md#examples)
 
-# Examples
+# Examples (Python)
 ## Message with image:
 ```python
 from openai import OpenAI
