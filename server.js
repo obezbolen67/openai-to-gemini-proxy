@@ -185,8 +185,8 @@ app.get("/v1/models", async (req, res) => {
     });
 });
 
-// app.listen(3000, () => {
-//    console.log("Proxy server running on port 3000");
-// });
+ app.listen(3333, () => {
+    console.log("Proxy server running on port 3333");
+});
 
 export default app;
