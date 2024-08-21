@@ -1,5 +1,5 @@
 # openai-to-gemini-proxy
-OpenAI → Gemini Proxy (Supports Video/Audio/Image)
+OpenAI → Gemini Proxy **(Supports Video/Audio/Image!)**
 
 This is my own proxy for OpenAI to replace GPT models with Google Gemini ones.
 # Getting started
