@@ -7,13 +7,18 @@ import axios from "axios";
 import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "500mb" }));
+app.use(express.urlencoded({ limit: "500mb" }));
 
 let GEMINI_API_KEY;
 async function getData(url, type) {
     const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
 
     let data;
+
+    if (url.startsWith("data:")) {
+        return url.split("base64,")[1];
+    }
 
     if (type === "image" || type === "audio") {
         data = (await axios.get(url, { responseType: "arraybuffer" })).data;
@@ -76,43 +81,45 @@ app.post("/v1/chat/completions", async (req, res) => {
 
         for (let message of request.messages) {
             let newcontent = [];
-
-            for (let item of message.content) {
-                if (item?.type === "text") {
-                    newcontent.push({ text: item.text });
-                } else if (typeof item === "string") {
-                    newcontent.push({ text: item });
-                } else if (item?.type === "image_url") {
-                    const imageData = await getData(
-                        item.image_url.url,
-                        "image",
-                    );
-                    newcontent.push({
-                        inlineData: {
-                            data: imageData,
-                            mimeType: "image/png",
-                        },
-                    });
-                } else if (item?.type === "audio_url") {
-                    const audioData = await getData(
-                        item.audio_url.url,
-                        "audio",
-                    );
-                    newcontent.push({
-                        inlineData: {
-                            data: audioData,
-                            mimeType: "audio/mp3",
-                        },
-                    });
-                } else if (item?.type === "video_url") {
-                    const uri = await getData(item.video_url.url, "video");
-
-                    newcontent.push({
-                        fileData: {
-                            fileUri: uri,
-                            mimeType: "video/mp4",
-                        },
-                    });
+            if (typeof message.content === "string") {
+                newcontent.push({ text: message.content });
+            } else {
+                
+                for (let item of message.content) {
+                    if (item?.type === "text") {
+                        newcontent.push({ text: item.text });
+                    } else if (item?.type === "image_url") {
+                        const imageData = await getData(
+                            item.image_url.url,
+                            "image",
+                        );
+                        newcontent.push({
+                            inlineData: {
+                                data: imageData,
+                                mimeType: "image/png",
+                            },
+                        });
+                    } else if (item?.type === "audio_url") {
+                        const audioData = await getData(
+                            item.audio_url.url,
+                            "audio",
+                        );
+                        newcontent.push({
+                            inlineData: {
+                                data: audioData,
+                                mimeType: "audio/mp3",
+                            },
+                        });
+                    } else if (item?.type === "video_url") {
+                        const uri = await getData(item.video_url.url, "video");
+    
+                        newcontent.push({
+                            fileData: {
+                                fileUri: uri,
+                                mimeType: "video/mp4",
+                            },
+                        });
+                    }
                 }
             }
             if (message.role === "assistant") {
@@ -121,7 +128,6 @@ app.post("/v1/chat/completions", async (req, res) => {
 
             if (message.role === "system") {
                 contnts.push({ role: "user", parts: newcontent });
-                contnts.push({ role: "model", parts: [{ text: "" }] });
             } else {
                 contnts.push({
                     role: message.role,
@@ -129,7 +135,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                 });
             }
         }
-
+        
         const resp = (
             await model.generateContent({
                 contents: contnts,
@@ -170,10 +176,8 @@ app.post("/v1/chat/completions", async (req, res) => {
             ],
         });
     } catch (error) {
-        console.error(
-            "Error:",
-            error.response ? error.response.data : error.message,
-        );
+        console.error(error);
+
         res.status(500).send(error.message);
     }
 });
@@ -185,7 +189,7 @@ app.get("/v1/models", async (req, res) => {
     });
 });
 
- app.listen(3333, () => {
+app.listen(3333, () => {
     console.log("Proxy server running on port 3333");
 });
 
