@@ -3,7 +3,7 @@ import fs from "fs";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import modelsList from "./src/models.js";
+import { modelsList, modelMap } from "./src/models.js";
 import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import axios from "axios";
 import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
@@ -77,7 +77,10 @@ app.post("/v1/chat/completions", async (req, res) => {
         GEMINI_API_KEY = req.headers.authorization.split("Bearer ")[1];
 
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = genAI.getGenerativeModel({ model: request.model });
+
+        let modelName = modelMap[request.model] || request.model;
+
+        const model = genAI.getGenerativeModel({ model: modelName });
 
         let contnts = [];
 
@@ -166,9 +169,6 @@ app.post("/v1/chat/completions", async (req, res) => {
                 read() {},
             });
 
-            res.setHeader("Content-Type", "application/json");
-            res.setHeader("Transfer-Encoding", "chunked");
-
             pipeline(readableStream, res).catch((err) => {
                 console.error("Pipeline error:", err);
                 res.status(500).send("Internal Server Error");
@@ -197,7 +197,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                 );
             }
             readableStream.push("data: [DONE]\n\n");
-            res.end()
+            readableStream.push(null);
         } else {
             const resp = (
                 await model.generateContent({
