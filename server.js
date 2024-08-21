@@ -1,5 +1,7 @@
 import express from "express";
 import fs from "fs";
+import { pipeline } from "node:stream/promises";
+import { Readable } from "node:stream";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import modelsList from "./src/models.js";
 import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
@@ -84,7 +86,6 @@ app.post("/v1/chat/completions", async (req, res) => {
             if (typeof message.content === "string") {
                 newcontent.push({ text: message.content });
             } else {
-                
                 for (let item of message.content) {
                     if (item?.type === "text") {
                         newcontent.push({ text: item.text });
@@ -112,7 +113,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                         });
                     } else if (item?.type === "video_url") {
                         const uri = await getData(item.video_url.url, "video");
-    
+
                         newcontent.push({
                             fileData: {
                                 fileUri: uri,
@@ -135,46 +136,92 @@ app.post("/v1/chat/completions", async (req, res) => {
                 });
             }
         }
-        
-        const resp = (
-            await model.generateContent({
-                contents: contnts,
 
-                safetySettings: [
+        const safeSett = [
+            {
+                category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+                category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+        ];
+
+        if (request.stream) {
+            const resp = await model.generateContentStream({
+                contents: contnts,
+                safetySettings: safeSett,
+            });
+
+            const readableStream = new Readable({
+                read() {},
+            });
+
+            res.setHeader("Content-Type", "application/json");
+            res.setHeader("Transfer-Encoding", "chunked");
+
+            pipeline(readableStream, res).catch((err) => {
+                console.error("Pipeline error:", err);
+                res.status(500).send("Internal Server Error");
+            });
+
+            for await (const chunk of resp.stream) {
+                readableStream.push(
+                    "data: " +
+                        JSON.stringify({
+                            id: "chatcmpl-abc123",
+                            object: "chat.completion.chunk",
+                            created: Math.floor(Date.now() / 1000),
+                            model: request.model,
+                            choices: [
+                                {
+                                    delta: {
+                                        role: "assistant",
+                                        content: chunk.text(),
+                                    },
+                                    finish_reason: null,
+                                    index: 0,
+                                },
+                            ],
+                        }) +
+                        "\n\n",
+                );
+            }
+            readableStream.push("data: [DONE]\n\n");
+            res.end()
+        } else {
+            const resp = (
+                await model.generateContent({
+                    contents: contnts,
+
+                    safetySettings: safeSett,
+                })
+            ).response.text();
+
+            res.json({
+                id: "chatcmpl-abc123",
+                object: "chat.completion",
+                created: Math.floor(Date.now() / 1000),
+                model: req.model,
+                choices: [
                     {
-                        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-                        threshold: HarmBlockThreshold.BLOCK_NONE,
-                    },
-                    {
-                        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-                        threshold: HarmBlockThreshold.BLOCK_NONE,
-                    },
-                    {
-                        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-                        threshold: HarmBlockThreshold.BLOCK_NONE,
-                    },
-                    {
-                        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-                        threshold: HarmBlockThreshold.BLOCK_NONE,
+                        message: { role: "model", content: resp },
+                        finish_reason: "stop",
+                        index: 0,
+                        logprobs: null,
                     },
                 ],
-            })
-        ).response.text();
-
-        res.json({
-            id: "chatcmpl-abc123",
-            object: "chat.completion",
-            created: Math.floor(Date.now() / 1000),
-            model: req.model,
-            choices: [
-                {
-                    message: { role: "model", content: resp },
-                    finish_reason: "stop",
-                    index: 0,
-                    logprobs: null,
-                },
-            ],
-        });
+            });
+        }
     } catch (error) {
         console.error(error);
 
