@@ -1,5 +1,5 @@
 const modelMap = {
-  "gpt-3.5-turbo": "gemini-1.0-pro",
+  "gpt-3.5-turbo": "gemini-1.5-flash",
   "gpt-4": "gemini-1.5-pro",
   "gpt-4-turbo": "gemini-1.5-flash",
   "gpt-4o": "gemini-1.5-flash",
