@@ -1,7 +1,7 @@
 This is my own proxy for OpenAI to replace GPT models with Google Gemini ones.
 
 Tested in:
-- SillyTavern (streaming not works)
+- SillyTavern
 - Python OpenAI package
 
 # Getting started
@@ -135,7 +135,7 @@ If you need video processing feature, you may want to fork my repository and use
 <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fobezbolen67%2Fopenai-to-gemini-proxy&project-name=my-openai-to-gemini-proxy&repository-name=my-openai-to-gemini-proxy"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
 
 # Current Capabilities
-- `/v1/chat/completions` **(streaming not supported yet)**
+- `/v1/chat/completions` **(with streaming support**
 - `/v1/models`
 
 # Support developer
