@@ -5,20 +5,12 @@ import { Readable } from "node:stream";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { modelsList, modelMap } from "./src/models.js";
 import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
-import cors from "cors";
 import axios from "axios";
 import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
 
 const app = express();
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ limit: "500mb" }));
-const corsOptions = {
-    origin: "http://localhost:3000", // Allow requests from this origin
-    credentials: true, // Allow cookies or authentication headers
-    optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
 
 let GEMINI_API_KEY;
 async function getData(url, type) {
