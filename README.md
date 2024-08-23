@@ -30,7 +30,7 @@ My proxy provides **video**, **image** and **audio** input. For now you can send
 ```python
 from openai import OpenAI
 
-base_url = "http://localhost:3000/v1"
+base_url = "http://localhost:3333/v1"
 
 API_KEY = "your_api_key"
 
@@ -63,7 +63,7 @@ print(response.choices[0].message.content) # The image is a close-up shot of a c
 ```python
 from openai import OpenAI
 
-base_url = "http://localhost:3000/v1"
+base_url = "http://localhost:3333/v1"
 
 API_KEY = "your_api_key"
 
@@ -96,7 +96,7 @@ print(response.choices[0].message.content) # The video shows a screen recording 
 ```python
 from openai import OpenAI
 
-base_url = "http://localhost:3000/v1"
+base_url = "http://localhost:3333/v1"
 
 API_KEY = "your_api_key"
 
