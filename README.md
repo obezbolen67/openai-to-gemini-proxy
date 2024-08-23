@@ -25,8 +25,6 @@ Proxy server running on port 3333
 # Usage
 My proxy provides **video**, **image** and **audio** input. For now you can send your media through **direct links** (works well with discord attachments or imgur [images](https://i.imgur.com/Jiny1mJ.jpeg))
 
-For use examples look [Examples Section](docs/README.md#examples)
-
 # Examples (Python)
 ## Message with image:
 ```python
