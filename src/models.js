@@ -11,7 +11,19 @@ const modelsList = [
     created: 1677610602,
     object: "model",
     owned_by: "google",
+    id: "gemini-1.5-pro-exp-0827",
+  },
+  {
+    created: 1677610602,
+    object: "model",
+    owned_by: "google",
     id: "gemini-1.5-pro",
+  },
+  {
+    created: 1677610602,
+    object: "model",
+    owned_by: "google",
+    id: "gemini-1.5-flash-exp-0827",
   },
   {
     created: 1677610602,
