@@ -1,9 +1,9 @@
 const modelMap = {
-  "gpt-3.5-turbo": "gemini-1.5-flash",
-  "gpt-4": "gemini-1.5-pro",
-  "gpt-4-turbo": "gemini-1.5-flash",
-  "gpt-4o": "gemini-1.5-flash",
-  "gpt-4o-mini": "gemini-1.5-pro",
+  "gpt-3.5-turbo": "gemini-1.5-flash-exp-0827",
+  "gpt-4": "gemini-1.5-pro-exp-0827",
+  "gpt-4-turbo": "gemini-1.5-flash-exp-0827",
+  "gpt-4o": "gemini-1.5-flash-exp-0827",
+  "gpt-4o-mini": "gemini-1.5-pro-exp-0827",
 };
 
 const modelsList = [
