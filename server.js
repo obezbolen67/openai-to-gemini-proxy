@@ -48,15 +48,12 @@ async function getData(url, type) {
                         ).file.name;
 
                         let video = await fileManager.getFile(videoName);
-                        process.stdout.write(`Processing ${videoName}.`);
                         while (video.state === FileState.PROCESSING) {
                             await new Promise((resolve) =>
                                 setTimeout(resolve, 500),
                             );
-                            process.stdout.write(".");
                             video = await fileManager.getFile(videoName);
                             if (video.state !== FileState.PROCESSING) {
-                                console.log(`\n${videoName} processed.`);
                                 fs.unlinkSync(path);
                                 res(video.uri);
                             }
@@ -69,6 +66,64 @@ async function getData(url, type) {
         return uri;
     }
 }
+
+app.post("/v1/filemanager/upload", async (req, res) => {
+    function uploadFile() {
+        try {
+            GEMINI_API_KEY = req.headers.authorization.split("Bearer ")[1];
+            const url = req.body.url;
+            const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
+
+            axios({ method: "get", url: url, responseType: "stream" }).then(
+                async (response) => {
+                    const mimeType = response.headers["content-type"];
+                    const path =
+                        mimeType.split("/")[0] === "image"
+                            ? ".temp/image.png"
+                            : mimeType.split("/")[0] === "video"
+                              ? ".temp/video.mp4"
+                              : ".temp/audio.mp3";
+                    if (!fs.existsSync("./.temp/")) {
+                        fs.mkdirSync("./.temp/");
+                    }
+
+                    const writer = fs.createWriteStream(path);
+
+                    response.data.pipe(writer);
+
+                    writer.on("finish", async () => {
+                        const fileName = (
+                            await fileManager.uploadFile(path, {
+                                mimeType: mimeType,
+                                displayName: path,
+                            })
+                        ).file.name;
+
+                        let file = await fileManager.getFile(fileName);
+                        if (file.state === FileState.ACTIVE) {
+                            fs.unlinkSync(path);
+                            res.send(file.uri);
+                        }
+                        while (file.state === FileState.PROCESSING) {
+                            await new Promise((resolve) =>
+                                setTimeout(resolve, 500),
+                            );
+                            file = await fileManager.getFile(fileName);
+                            if (file.state !== FileState.PROCESSING) {
+                                fs.unlinkSync(path);
+                                res.send(file.uri);
+                            }
+                        }
+                    });
+                },
+            );
+        } catch (error) {
+            console.error(error);
+            res.status(500).send("URL is not valid");
+        }
+    }
+    uploadFile();
+});
 
 app.post("/v1/chat/completions", async (req, res) => {
     try {
@@ -93,36 +148,77 @@ app.post("/v1/chat/completions", async (req, res) => {
                     if (item?.type === "text") {
                         newcontent.push({ text: item.text });
                     } else if (item?.type === "image_url") {
-                        const imageData = await getData(
-                            item.image_url.url,
-                            "image",
-                        );
-                        newcontent.push({
-                            inlineData: {
-                                data: imageData,
-                                mimeType: "image/png",
-                            },
-                        });
+                        if (
+                            item.image_url.url.startsWith(
+                                "https://generativelanguage.googleapis.com/v1beta/files/",
+                            )
+                        ) {
+                            newcontent.push({
+                                fileData: {
+                                    fileUri: item.image_url.url,
+                                    mimeType: "image/png",
+                                },
+                            });
+                        } else {
+                            const imageData = await getData(
+                                item.image_url.url,
+                                "image",
+                            );
+                            newcontent.push({
+                                inlineData: {
+                                    data: imageData,
+                                    mimeType: "image/png",
+                                },
+                            });
+                        }
                     } else if (item?.type === "audio_url") {
-                        const audioData = await getData(
-                            item.audio_url.url,
-                            "audio",
-                        );
-                        newcontent.push({
-                            inlineData: {
-                                data: audioData,
-                                mimeType: "audio/mp3",
-                            },
-                        });
+                        if (
+                            item.audio_url.url.startsWith(
+                                "https://generativelanguage.googleapis.com/v1beta/files/",
+                            )
+                        ) {
+                            newcontent.push({
+                                fileData: {
+                                    fileUri: item.audio_url.url,
+                                    mimeType: "audio/mp3",
+                                },
+                            });
+                        } else {
+                            const audioData = await getData(
+                                item.audio_url.url,
+                                "audio",
+                            );
+                            newcontent.push({
+                                inlineData: {
+                                    data: audioData,
+                                    mimeType: "audio/mp3",
+                                },
+                            });
+                        }
                     } else if (item?.type === "video_url") {
-                        const uri = await getData(item.video_url.url, "video");
-
-                        newcontent.push({
-                            fileData: {
-                                fileUri: uri,
-                                mimeType: "video/mp4",
-                            },
-                        });
+                        if (
+                            item.video_url.url.startsWith(
+                                "https://generativelanguage.googleapis.com/v1beta/files/",
+                            )
+                        ) {
+                            newcontent.push({
+                                fileData: {
+                                    fileUri: item.video_url.url,
+                                    mimeType: "video/mp4",
+                                },
+                            });
+                        } else {
+                            const videoData = await getData(
+                                item.video_url.url,
+                                "video",
+                            );
+                            newcontent.push({
+                                inlineData: {
+                                    data: videoData,
+                                    mimeType: "video/mp4",
+                                },
+                            });
+                        }
                     }
                 }
             }
