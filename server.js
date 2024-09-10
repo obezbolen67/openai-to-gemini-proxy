@@ -1,5 +1,6 @@
 import express from "express";
 import fs from "fs";
+import cors from "cors";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -11,6 +12,7 @@ import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
 const app = express();
 app.use(express.json({ limit: "500mb" }));
 app.use(express.urlencoded({ limit: "500mb" }));
+app.use(cors()); 
 
 let GEMINI_API_KEY;
 async function getData(url, type) {
