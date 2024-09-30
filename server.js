@@ -265,7 +265,6 @@ app.post("/v1/chat/completions", async (req, res) => {
             });
 
             for await (const chunk of resp.stream) {
-                console.log(chunk.text())
                 readableStream.push(
                     "data: " +
                         JSON.stringify({
@@ -290,7 +289,6 @@ app.post("/v1/chat/completions", async (req, res) => {
             readableStream.push("data: [DONE]\n\n");
             readableStream.push(null);
         } else {
-            console.log(contnts[0].parts)
             const resp = (
                 await model.generateContent({
                     contents: contnts,
@@ -329,7 +327,7 @@ app.get("/v1/models", async (req, res) => {
 });
 
 app.listen(3333, () => {
-    console.log("Proxy server running on port 3333");
+    console.log("Server running on port 3333");
 });
 
 export default app;
