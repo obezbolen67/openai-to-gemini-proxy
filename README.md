@@ -126,7 +126,7 @@ response = model.chat.completions.create(
 print(response.choices[0].message.content) # 00:00 Hi, how are you doing? \n 00:02 I'm fine, how about yourself? \n 00:04 I'm pretty good. Thanks for asking.
 ```
 # Run Proxy Remotely
-If Gemini **blocked** in your region or you want to have a remote server, you can deploy repo on **Render**. But be warned that Render storage is limited so avoid uploading **large videos** to API.
+If Gemini **blocked** in your region or you want to have a remote server, you can deploy repo on **Render**, although it can delay requests up to **2 minutes when inactive**. But be warned that Render storage is limited so avoid uploading **large videos** to API.
 
 <a href="https://render.com/deploy?repo=https://github.com/obezbolen67/openai-to-gemini-proxy">
   <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
