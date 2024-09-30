@@ -80,7 +80,11 @@ async function uploadFile(url) {
                     if (!fs.existsSync("./.temp/")) {
                         fs.mkdirSync("./.temp/");
                     }
-                    const path = mimeType.split("/")[0] === "image" ? ".temp/image.png" : mimeType.split("/")[0] === "video" ? ".temp/video.mp4" : ".temp/audio.mp3";
+                    
+                    const id = Math.random().toString(36).substring(2, 7);
+
+                    
+                    const path = mimeType.split("/")[0] === "image" ? `.temp/image_${id}.png` : mimeType.split("/")[0] === "video" ? `.temp/video_${id}.mp4` : `.temp/audio_${id}.mp3`;
     
                     const writer = fs.createWriteStream(path);
     
