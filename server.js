@@ -273,6 +273,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             });
 
             for await (const chunk of resp.stream) {
+                console.log(chunk.text())
                 readableStream.push(
                     "data: " +
                         JSON.stringify({
