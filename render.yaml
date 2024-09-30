@@ -8,7 +8,6 @@ services:
     buildCommand: npm i
     startCommand: node server
     autoDeploy: true 
-    maxShutdownDelaySeconds: 120
     envVars:
     - key: PORT
       value: 3333
