@@ -1,13 +1,14 @@
-- type: web
-  runtime: node
-  name: openai-to-gemini-proxy
-  region: frankfurt
-  plan: free
-  branch: main 
-  buildCommand: npm i
-  startCommand: node server
-  autoDeploy: true 
-  maxShutdownDelaySeconds: 120
-  envVars:
-  - key: PORT
-    value: 3333
+services:
+  - type: web
+    runtime: node
+    name: openai-to-gemini-proxy
+    region: frankfurt
+    plan: free
+    branch: main 
+    buildCommand: npm i
+    startCommand: node server
+    autoDeploy: true 
+    maxShutdownDelaySeconds: 120
+    envVars:
+    - key: PORT
+      value: 3333
