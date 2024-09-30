@@ -69,42 +69,34 @@ async function getData(url, type) {
     }
 }
 
-app.post("/v1/filemanager/upload", async (req, res) => {
-    function uploadFile() {
+async function uploadFile(url) {
+    return await new Promise((res, rej) => {
         try {
-            GEMINI_API_KEY = req.headers.authorization.split("Bearer ")[1];
-            const url = req.body.url;
             const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
-
             axios({ method: "get", url: url, responseType: "stream" }).then(
                 async (response) => {
-                    const mimeType = response.headers["content-type"];
-                    const path =
-                        mimeType.split("/")[0] === "image"
-                            ? ".temp/image.png"
-                            : mimeType.split("/")[0] === "video"
-                              ? ".temp/video.mp4"
-                              : ".temp/audio.mp3";
+                    let mimeType = response.headers["content-type"];
+                    mimeType = mimeType === "application/binary" ? "video/mp4" : mimeType;
                     if (!fs.existsSync("./.temp/")) {
                         fs.mkdirSync("./.temp/");
                     }
-
+                    const path = mimeType.split("/")[0] === "image" ? ".temp/image.png" : mimeType.split("/")[0] === "video" ? ".temp/video.mp4" : ".temp/audio.mp3";
+    
                     const writer = fs.createWriteStream(path);
-
+    
                     response.data.pipe(writer);
-
-                    writer.on("finish", async () => {
+                    writer.on("finish", async () => {   
                         const fileName = (
                             await fileManager.uploadFile(path, {
                                 mimeType: mimeType,
                                 displayName: path,
                             })
                         ).file.name;
-
+    
                         let file = await fileManager.getFile(fileName);
                         if (file.state === FileState.ACTIVE) {
                             fs.unlinkSync(path);
-                            res.send(file.uri);
+                            res(file.uri);
                         }
                         while (file.state === FileState.PROCESSING) {
                             await new Promise((resolve) =>
@@ -113,7 +105,7 @@ app.post("/v1/filemanager/upload", async (req, res) => {
                             file = await fileManager.getFile(fileName);
                             if (file.state !== FileState.PROCESSING) {
                                 fs.unlinkSync(path);
-                                res.send(file.uri);
+                                res(file.uri);
                             }
                         }
                     });
@@ -121,11 +113,22 @@ app.post("/v1/filemanager/upload", async (req, res) => {
             );
         } catch (error) {
             console.error(error);
-            res.status(500).send("URL is not valid");
+            res("URL is not valid");
         }
+    });
+}
+
+// TODO: delete this shi
+app.post("/v1/filemanager/upload", async (req, res) => {
+    GEMINI_API_KEY = req.headers.authorization.split("Bearer ")[1];
+
+    const response = await uploadFile(req.body.url)
+    if (response === "URL is not valid") {
+        res.status(500).send("URL is not valid");
     }
-    uploadFile();
-});
+
+    res.send(response);
+})
 
 app.post("/v1/chat/completions", async (req, res) => {
     try {
@@ -198,29 +201,18 @@ app.post("/v1/chat/completions", async (req, res) => {
                             });
                         }
                     } else if (item?.type === "video_url") {
-                        if (
-                            item.video_url.url.startsWith(
-                                "https://generativelanguage.googleapis.com/v1beta/files/",
-                            )
-                        ) {
-                            newcontent.push({
-                                fileData: {
-                                    fileUri: item.video_url.url,
-                                    mimeType: "video/mp4",
-                                },
-                            });
-                        } else {
-                            const videoData = await getData(
-                                item.video_url.url,
-                                "video",
-                            );
-                            newcontent.push({
-                                inlineData: {
-                                    data: videoData,
-                                    mimeType: "video/mp4",
-                                },
-                            });
+                        if (!item.video_url.url.startsWith("https://generativelanguage.googleapis.com/v1beta/files/")) {
+                            item.video_url.url = await uploadFile(item.video_url.url)
+                            if (item.video_url.url === "URL is not valid") {
+                                res.status(500).send("URL is not valid");
+                            }
                         }
+                        newcontent.push({
+                            fileData: {
+                                fileUri: item.video_url.url,
+                                mimeType: "video/mp4",
+                            },
+                        });
                     }
                 }
             }
@@ -298,6 +290,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             readableStream.push("data: [DONE]\n\n");
             readableStream.push(null);
         } else {
+            console.log(contnts[0].parts)
             const resp = (
                 await model.generateContent({
                     contents: contnts,
