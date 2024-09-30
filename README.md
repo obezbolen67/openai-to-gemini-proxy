@@ -126,13 +126,9 @@ response = model.chat.completions.create(
 print(response.choices[0].message.content) # 00:00 Hi, how are you doing? \n 00:02 I'm fine, how about yourself? \n 00:04 I'm pretty good. Thanks for asking.
 ```
 # Run Proxy Remotely
-If Gemini **blocked** in your region or you want to have a remote server, you can deploy repo on vercel. But be warned that vercel file system is ephemeral (read-only) so **video processing is not available with vercel.**
+If Gemini **blocked** in your region or you want to have a remote server, you can deploy repo on **Render**. But be warned that Render file system is ephemeral (read-only) so **video processing is not available.**
 
 If you need video processing feature, you may want to fork my repository and use [replit](https://docs.replit.com/replit-workspace/using-git-on-replit/connect-github-to-replit) to run application from it.
-
-<a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fobezbolen67%2Fopenai-to-gemini-proxy&project-name=my-openai-to-gemini-proxy&repository-name=my-openai-to-gemini-proxy"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
-
-I also recommend **Render** because vercel has problems with handling streaming responses. You can set up your render project by clicking button below.
 
 <a href="https://render.com/deploy?repo=https://github.com/obezbolen67/openai-to-gemini-proxy">
   <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
