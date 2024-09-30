@@ -1,18 +1,12 @@
 const modelMap = {
-  "gpt-3.5-turbo": "gemini-1.5-flash-exp-0827",
-  "gpt-4": "gemini-1.5-pro-exp-0801",
-  "gpt-4-turbo": "gemini-1.5-flash-exp-0827",
-  "gpt-4o": "gemini-1.5-pro-exp-0801",
-  "gpt-4o-mini": "gemini-1.5-flash-exp-0827",
+  "gpt-3.5-turbo": "gemini-1.5-flash-latest",
+  "gpt-4": "gemini-1.5-pro-latest",
+  "gpt-4-turbo": "gemini-1.5-flash-latest",
+  "gpt-4o": "gemini-1.5-pro-latest",
+  "gpt-4o-mini": "gemini-1.5-flash-latest",
 };
 
 const modelsList = [
-  {
-    created: 1677610602,
-    object: "model",
-    owned_by: "google",
-    id: "gemini-1.5-pro-exp-0801",
-  },
   {
     created: 1677610602,
     object: "model",
@@ -23,7 +17,7 @@ const modelsList = [
     created: 1677610602,
     object: "model",
     owned_by: "google",
-    id: "gemini-1.5-pro",
+    id: "gemini-1.5-pro-latest",
   },
   {
     created: 1677610602,
@@ -35,14 +29,8 @@ const modelsList = [
     created: 1677610602,
     object: "model",
     owned_by: "google",
-    id: "gemini-1.5-flash",
-  },
-  {
-    created: 1677610602,
-    object: "model",
-    owned_by: "google",
-    id: "gemini-1.0-pro",
-  },
+    id: "gemini-1.5-flash-latest",
+  }
 ];
 
 export { modelsList, modelMap };
