@@ -132,6 +132,12 @@ If you need video processing feature, you may want to fork my repository and use
 
 <a href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fobezbolen67%2Fopenai-to-gemini-proxy&project-name=my-openai-to-gemini-proxy&repository-name=my-openai-to-gemini-proxy"><img src="https://vercel.com/button" alt="Deploy with Vercel"/></a>
 
+I also recommend **Render** because vercel has problems with handling streaming responses. You can set up your render project by clicking button below.
+
+<a href="https://render.com/deploy?repo=https://github.com/obezbolen67/openai-to-gemini-proxy">
+  <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
+</a>
+
 # Current Capabilities
 - `/v1/chat/completions` **(with streaming support!)**
 - `/v1/models`
