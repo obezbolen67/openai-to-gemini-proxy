@@ -71,6 +71,7 @@ async function getData(url, type) {
 
 async function uploadFile(url) {
     return await new Promise((res, rej) => {
+        let path;
         try {
             const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
             axios({ method: "get", url: url, responseType: "stream" }).then(
@@ -84,12 +85,12 @@ async function uploadFile(url) {
                     const id = Math.random().toString(36).substring(2, 7);
 
                     
-                    const path = mimeType.split("/")[0] === "image" ? `.temp/image_${id}.png` : mimeType.split("/")[0] === "video" ? `.temp/video_${id}.mp4` : `.temp/audio_${id}.mp3`;
+                    path = mimeType.split("/")[0] === "image" ? `.temp/image_${id}.png` : mimeType.split("/")[0] === "video" ? `.temp/video_${id}.mp4` : `.temp/audio_${id}.mp3`;
     
                     const writer = fs.createWriteStream(path);
     
                     response.data.pipe(writer);
-                    writer.on("finish", async () => {   
+                    writer.on("finish", async () => {
                         const fileName = (
                             await fileManager.uploadFile(path, {
                                 mimeType: mimeType,
@@ -117,6 +118,10 @@ async function uploadFile(url) {
             );
         } catch (error) {
             console.error(error);
+            if (path) {
+                fs.unlinkSync(path);
+            }
+
             res("URL is not valid");
         }
     });
