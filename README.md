@@ -3,6 +3,7 @@ This is my own proxy for OpenAI to replace GPT models with Google Gemini ones.
 Tested on:
 - SillyTavern
 - Python OpenAI package
+- Cursor
 
 # Getting started
 
