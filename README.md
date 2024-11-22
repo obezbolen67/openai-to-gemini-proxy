@@ -133,7 +133,7 @@ If Gemini **blocked** in your region or you want to have a remote server, you ca
   <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render">
 </a>
 
-# Current Capabilities
+# Current Endpoints
 - `/v1/chat/completions` **(with streaming support!)**
 - `/v1/models`
 
