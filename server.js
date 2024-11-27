@@ -3,21 +3,22 @@ import fs from "fs";
 import cors from "cors";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import { modelsList, modelMap } from "./src/models.js";
-import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 import axios from "axios";
 import { GoogleAIFileManager, FileState } from "@google/generative-ai/server";
+import os from "os";
 
 const app = express();
 app.use(express.json({ limit: "500mb" }));
-app.use(express.urlencoded({ limit: "500mb" }));
-app.use(cors()); 
+app.use(express.urlencoded({ extended: true, limit: "500mb" }));
+app.use(cors());
 
+const port = process.env.PORT || 3333;
 let GEMINI_API_KEY;
+
 async function getData(url, type) {
     const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
-
     let data;
 
     if (url.startsWith("data:")) {
@@ -26,124 +27,173 @@ async function getData(url, type) {
 
     if (type === "image" || type === "audio") {
         data = (await axios.get(url, { responseType: "arraybuffer" })).data;
-
         return Buffer.from(data).toString("base64");
     } else if (type === "video") {
-        const uri = await new Promise(async (res) => {
-            axios({ method: "get", url: url, responseType: "stream" }).then(
-                async (response) => {
-                    const path = ".temp/video.mp4";
-                    if (!fs.existsSync("./.temp/")) {
-                        fs.mkdirSync("./.temp/");
-                    }
+        const uri = await new Promise(async (res, rej) => {
+            let path;
+            try {
+                const response = await axios({ method: "get", url, responseType: "stream" });
+                path = `.temp/video_${Math.random().toString(36).substring(2, 7)}.mp4`;
 
-                    const writer = fs.createWriteStream(path);
+                if (!fs.existsSync("./.temp/")) {
+                    fs.mkdirSync("./.temp/");
+                }
 
-                    response.data.pipe(writer);
+                const writer = fs.createWriteStream(path);
+                response.data.pipe(writer);
 
-                    writer.on("finish", async () => {
-                        const videoName = (
-                            await fileManager.uploadFile(path, {
-                                mimeType: "video/mp4",
-                                displayName: path,
-                            })
-                        ).file.name;
+                writer.on("finish", async () => {
+                    try {
+                        const videoName = (await fileManager.uploadFile(path, {
+                            mimeType: "video/mp4",
+                            displayName: path,
+                        })).file.name;
+
+                        let retries = 0;
+                        const maxRetries = 10;
 
                         let video = await fileManager.getFile(videoName);
-                        while (video.state === FileState.PROCESSING) {
-                            await new Promise((resolve) =>
-                                setTimeout(resolve, 500),
-                            );
-                            video = await fileManager.getFile(videoName);
-                            if (video.state !== FileState.PROCESSING) {
-                                fs.unlinkSync(path);
-                                res(video.uri);
-                            }
-                        }
-                    });
-                },
-            );
-        });
 
+                        while (video.state === FileState.PROCESSING && retries < maxRetries) {
+                            await new Promise((resolve) => setTimeout(resolve, 500));
+                            video = await fileManager.getFile(videoName);
+                            retries++;
+                        }
+
+                        if (video.state === FileState.ACTIVE || video.state === FileState.FAILED) {
+                            fs.unlinkSync(path);
+                            res(video.uri);
+
+                        } else {
+                            rej(new Error("Video processing timed out or failed."));
+                        }
+
+                    } catch (uploadError) {
+                        console.error("File upload error:", uploadError);
+                        fs.unlinkSync(path);
+                        rej(uploadError);
+                    }
+                });
+
+                writer.on("error", (err) => {
+                    if (path) fs.unlinkSync(path);
+                    rej(err);
+                });
+            }
+            catch (axiosError) {
+
+                if (path) fs.unlinkSync(path);
+                rej(axiosError);
+            }
+        });
         return uri;
     }
 }
 
 async function uploadFile(url) {
-    return await new Promise((res, rej) => {
-        let path;
+    return new Promise(async (res, rej) => {
+        let path = "";
         try {
             const fileManager = new GoogleAIFileManager(GEMINI_API_KEY);
-            axios({ method: "get", url: url, responseType: "stream" }).then(
-                async (response) => {
-                    let mimeType = response.headers["content-type"];
-                    mimeType = mimeType === "application/binary" ? "video/mp4" : mimeType;
-                    if (!fs.existsSync("./.temp/")) {
-                        fs.mkdirSync("./.temp/");
-                    }
-                    
-                    const id = Math.random().toString(36).substring(2, 7);
+            const response = await axios({ method: "get", url, responseType: "stream" }).catch(rej);
 
-                    
-                    path = mimeType.split("/")[0] === "image" ? `.temp/image_${id}.png` : mimeType.split("/")[0] === "video" ? `.temp/video_${id}.mp4` : `.temp/audio_${id}.mp3`;
-    
-                    const writer = fs.createWriteStream(path);
-    
-                    response.data.pipe(writer);
-                    writer.on("finish", async () => {
-                        const fileName = (
-                            await fileManager.uploadFile(path, {
-                                mimeType: mimeType,
-                                displayName: path,
-                            })
-                        ).file.name;
-    
-                        let file = await fileManager.getFile(fileName);
-                        if (file.state === FileState.ACTIVE) {
+            if (!response) return;
+
+            let mimeType = response.headers["content-type"];
+            mimeType = mimeType === "application/binary" ? "video/mp4" : mimeType;
+            if (!fs.existsSync("./.temp/")) {
+                fs.mkdirSync("./.temp/");
+            }
+
+            const id = Math.random().toString(36).substring(2, 7);
+
+            path = mimeType.split("/")[0] === "image" ? `.temp/image_${id}.png` : mimeType.split("/")[0] === "video" ? `.temp/video_${id}.mp4` : `.temp/audio_${id}.mp3`;
+
+            const writer = fs.createWriteStream(path);
+
+            response.data.pipe(writer);
+            writer.on("finish", async () => {
+                try {
+                    const fileName = (
+                        await fileManager.uploadFile(path, {
+                            mimeType,
+                            displayName: path,
+                        })
+                    ).file.name;
+
+                    let retries = 0;
+                    const maxRetries = 10;
+                    let file = await fileManager.getFile(fileName);
+                    while (file.state === FileState.PROCESSING && retries < maxRetries) {
+
+                        await new Promise((resolve) =>
+                            setTimeout(resolve, 500),
+                        );
+                        file = await fileManager.getFile(fileName);
+                        if (file.state !== FileState.PROCESSING) {
                             fs.unlinkSync(path);
                             res(file.uri);
+                            return
                         }
-                        while (file.state === FileState.PROCESSING) {
-                            await new Promise((resolve) =>
-                                setTimeout(resolve, 500),
-                            );
-                            file = await fileManager.getFile(fileName);
-                            if (file.state !== FileState.PROCESSING) {
-                                fs.unlinkSync(path);
-                                res(file.uri);
-                            }
-                        }
-                    });
-                },
-            );
+
+                        retries++;
+                    }
+
+                    if (file.state === FileState.ACTIVE) {
+                        fs.unlinkSync(path);
+                        res(file.uri)
+                        return
+                    }
+
+                    throw new Error("File processing timed out.");
+
+                } catch (uploadError) {
+                    console.error("File upload error:", uploadError);
+                    fs.unlinkSync(path);
+                    rej(uploadError);
+                }
+            });
+            writer.on("error", (err) => {
+                if (path) fs.unlinkSync(path);
+                rej(err)
+            });
+
         } catch (error) {
-            console.error(error);
+            console.error("Upload File Error:", error);
             if (path) {
                 fs.unlinkSync(path);
             }
-
-            res("URL is not valid");
+            rej("URL is not valid");
         }
     });
 }
 
-// TODO: delete this shi
 app.post("/v1/filemanager/upload", async (req, res) => {
-    GEMINI_API_KEY = req.headers.authorization.split("Bearer ")[1];
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).send("Unauthorized: Missing or invalid Authorization header");
+        }
 
-    const response = await uploadFile(req.body.url)
-    if (response === "URL is not valid") {
-        res.status(500).send("URL is not valid");
+        GEMINI_API_KEY = authHeader.split("Bearer ")[1];
+        const response = await uploadFile(req.body.url);
+        res.send(response);
+    } catch (error) {
+        console.error("Error in /v1/filemanager/upload:", error);
+
+        res.status(500).send(error.message || "Internal Server Error");
+
     }
-
-    res.send(response);
-})
+});
 
 app.post("/v1/chat/completions", async (req, res) => {
     try {
         const request = req.body;
-
-        GEMINI_API_KEY = req.headers.authorization.split("Bearer ")[1];
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).send("Unauthorized");
+        }
+        GEMINI_API_KEY = authHeader.split("Bearer ")[1];
 
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
@@ -310,7 +360,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                 id: "chatcmpl-abc123",
                 object: "chat.completion",
                 created: Math.floor(Date.now() / 1000),
-                model: req.model,
+                model: request.model,
                 choices: [
                     {
                         message: { role: "model", content: resp },
@@ -322,11 +372,68 @@ app.post("/v1/chat/completions", async (req, res) => {
             });
         }
     } catch (error) {
-        console.error(error);
 
+        console.error("Chat Completions Error:", error);
+
+        res.status(500).send(error.message || "Internal Server Error");
+
+    }
+});
+
+app.post("/v1/methods/count_tokens", async (req, res) => {
+    try {
+        const request = req.body;
+        GEMINI_API_KEY = req.headers.authorization.split("Bearer ")[1];
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+        let modelName = modelMap[request.model] || request.model;
+        const model = genAI.getGenerativeModel({ model: modelName });
+
+        let contents = [];
+
+        // Convert messages to Gemini format (similar to chat completions)
+        for (let message of request.messages) {
+            let newcontent = [];
+            if (typeof message.content === "string") {
+                newcontent.push({ text: message.content });
+            } else {
+                for (let item of message.content) {
+                    if (item?.type === "text") {
+                        newcontent.push({ text: item.text });
+                    }
+                    // Note: Media files are not counted in tokens, so we skip them
+                }
+            }
+
+            if (message.role === "assistant") {
+                message.role = "model";
+            }
+
+            if (message.role === "system") {
+                contents.push({ role: "user", parts: newcontent });
+            } else {
+                contents.push({
+                    role: message.role,
+                    parts: newcontent,
+                });
+            }
+        }
+
+        // Count tokens using the model's countTokens method
+        const tokenCount = await model.countTokens({ contents });
+
+        res.json({
+            object: "token_count",
+            model: request.model,
+            token_count: tokenCount.totalTokens
+        });
+
+    } catch (error) {
+        console.error(error);
         res.status(500).send(error.message);
     }
 });
+
 
 app.get("/v1/models", async (req, res) => {
     res.json({
@@ -335,8 +442,18 @@ app.get("/v1/models", async (req, res) => {
     });
 });
 
-app.listen(3333, () => {
-    console.log("Server running on port 3333");
+app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running on port ${port}`);
+
+    const interfaces = os.networkInterfaces();
+
+    for (const interfaceName in interfaces) {
+        for (const details of interfaces[interfaceName]) {
+            if (details.family === 'IPv4' && !details.internal) {
+                console.log(`Listening on ${details.address}:${port}`);
+            }
+        }
+    }
 });
 
 export default app;
