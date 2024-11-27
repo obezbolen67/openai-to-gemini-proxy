@@ -348,13 +348,16 @@ app.post("/v1/chat/completions", async (req, res) => {
             readableStream.push("data: [DONE]\n\n");
             readableStream.push(null);
         } else {
-            const resp = (
-                await model.generateContent({
-                    contents: contnts,
-
-                    safetySettings: safeSett,
-                })
-            ).response.text();
+            // Prepare the prompt contents for token counting
+            let promptContents = [];
+            for (const message of request.messages) {
+                if (message.role !== "assistant") { // Include system and user messages
+                    promptContents.push({
+                        role: message.role === "system" ? "user" : message.role, // System messages become "user" for counting
+                        parts: typeof message.content === "string" ? [{text: message.content}] : message.content
+                    });
+                }
+            }
 
             const tokenUsage = await model.countTokens({ contents: contnts });
             const promptTokenCount = await model.countTokens({ contents: promptContents });
