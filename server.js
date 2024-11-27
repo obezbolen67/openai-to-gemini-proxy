@@ -356,6 +356,9 @@ app.post("/v1/chat/completions", async (req, res) => {
                 })
             ).response.text();
 
+            const tokenUsage = await model.countTokens({ contents: contnts });
+            const promptTokenCount = await model.countTokens({ contents: promptContents });
+
             res.json({
                 id: "chatcmpl-abc123",
                 object: "chat.completion",
@@ -363,12 +366,17 @@ app.post("/v1/chat/completions", async (req, res) => {
                 model: request.model,
                 choices: [
                     {
-                        message: { role: "model", content: resp },
+                        message: { role: "model", content: { parts: [{ text: resp }] } },
                         finish_reason: "stop",
                         index: 0,
                         logprobs: null,
                     },
                 ],
+                usage: {
+                    prompt_tokens: promptTokenCount.totalTokens,
+                    completion_tokens: tokenUsage.totalTokens - promptTokenCount.totalTokens,
+                    total_tokens: tokenUsage.totalTokens
+                }
             });
         }
     } catch (error) {
