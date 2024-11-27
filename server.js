@@ -400,11 +400,12 @@ app.post("/v1/chat/completions", async (req, res) => {
             });
         }
     } catch (error) {
-
-        console.error("Chat Completions Error:", error);
-
-        res.status(500).send(error.message || "Internal Server Error");
-
+        if (error.status === 429) {  // Check for 429 status code
+            res.status(503).send({ error: "Too many requests, please try again later." });
+        } else {
+            console.error("Chat Completions Error:", error);
+            res.status(500).send(error.message || "Internal Server Error");
+        }
     }
 });
 
