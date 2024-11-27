@@ -308,6 +308,8 @@ app.post("/v1/chat/completions", async (req, res) => {
             },
         ];
 
+        let resp;
+
         if (request.stream) {
             const resp = await model.generateContentStream({
                 contents: contnts,
@@ -361,6 +363,18 @@ app.post("/v1/chat/completions", async (req, res) => {
 
             const tokenUsage = await model.countTokens({ contents: contnts });
             const promptTokenCount = await model.countTokens({ contents: promptContents });
+            resp = await model.generateContent({
+                contents: contnts,
+                safetySettings: safeSett,
+            });
+
+            let responseText = '';
+            if (resp && resp.response && typeof resp.response.text === 'function') {
+              responseText = resp.response.text();
+            } else {
+                console.error("Unexpected response format from Gemini:", resp);
+                return res.status(500).send("Internal Server Error: Unexpected response format from Gemini");
+            }
 
             res.json({
                 id: "chatcmpl-abc123",
@@ -369,7 +383,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                 model: request.model,
                 choices: [
                     {
-                        message: { role: "model", content: { parts: [{ text: resp }] } },
+                        message: { role: "model", content: { parts: [{ text: responseText }] } },
                         finish_reason: "stop",
                         index: 0,
                         logprobs: null,
