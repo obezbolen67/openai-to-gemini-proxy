@@ -377,13 +377,16 @@ app.post("/v1/chat/completions", async (req, res) => {
             }
 
             res.json({
-                id: "chatcmpl-abc123",
+                id: "cmpl-5v8k3",
                 object: "chat.completion",
                 created: Math.floor(Date.now() / 1000),
                 model: request.model,
                 choices: [
                     {
-                        message: { role: "model", content: { parts: [{ text: responseText }] } },
+                        message: { 
+                            role: "assistant",
+                            content: responseText
+                        },
                         finish_reason: "stop",
                         index: 0,
                         logprobs: null,
