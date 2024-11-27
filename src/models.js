@@ -4,7 +4,7 @@ const modelMap = {
   "gpt-4-turbo": "gemini-1.5-flash-latest",
   "gpt-4o": "gemini-exp-1121",
   "gpt-4o-mini": "gemini-1.5-flash-latest",
-  "claude-3-5-sonnet-200k: "gemini-exp-1121" // for Cursor
+  "claude-3-5-sonnet-200k": "gemini-exp-1121" // for Cursor
 };
 
 const modelsList = [
