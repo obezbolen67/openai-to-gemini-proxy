@@ -361,8 +361,10 @@ app.post("/v1/chat/completions", async (req, res) => {
                 }
             }
 
-            const tokenUsage = await model.countTokens({ contents: contnts });
-            const promptTokenCount = await model.countTokens({ contents: promptContents });
+            // const tokenUsage = await model.countTokens({ contents: contnts });
+            const tokenUsage = 0
+            // const promptTokenCount = await model.countTokens({ contents: promptContents });
+            const promptTokenCount = 0
             resp = await model.generateContent({
                 contents: contnts,
                 safetySettings: safeSett,
