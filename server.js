@@ -225,15 +225,11 @@ app.post("/v1/chat/completions", async (req, res) => {
         GEMINI_API_KEY = authHeader.split("Bearer ")[1];
 
         const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-        console.log("Model: " + request.model);
         let modelName = modelMap[request.model] || (
             modelsList.map((model) => model.id).includes(request.model) ?
                 request.model :
                 modelMap["gpt-4o-mini"]
         );
-
-
-        console.log(modelName);
 
         const model = genAI.getGenerativeModel({ model: modelName });
 
