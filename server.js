@@ -380,8 +380,20 @@ app.post("/v1/chat/completions", async (req, res) => {
                 res.write("data: [DONE]\n\n");
                 res.end();
             } catch (err) {
-                console.error("Stream error:", err);
-                res.status(500).send("Internal Server Error");
+                // Error handling within the streaming section
+                if (
+                    err instanceof Error &&
+                    err.message.includes("Text not available") &&
+                    err.message.includes("Response was blocked due to")
+                ) {
+                    // Handle blocked response without logging to console
+                    res.status(400).send({
+                        error: err.message,
+                    });
+                } else {
+                    console.error("Stream error:", err);
+                    res.status(500).send("Internal Server Error");
+                }
             }
         } else {
             // Prepare the prompt contents for token counting
