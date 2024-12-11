@@ -415,6 +415,30 @@ app.post("/v1/chat/completions", async (req, res) => {
                 typeof resp.response.text === "function"
             ) {
                 responseText = resp.response.text();
+
+                res.json({
+                    id: "cmpl-5v8k3",
+                    object: "chat.completion",
+                    created: Math.floor(Date.now() / 1000),
+                    model: request.model,
+                    choices: [
+                        {
+                            message: {
+                                role: "assistant",
+                                content: responseText,
+                            },
+                            finish_reason: "stop",
+                            index: 0,
+                            logprobs: null,
+                        },
+                    ],
+                    usage: {
+                        prompt_tokens: promptTokenCount.totalTokens,
+                        completion_tokens:
+                            tokenUsage.totalTokens - promptTokenCount.totalTokens,
+                        total_tokens: tokenUsage.totalTokens,
+                    },
+                });
             } else {
                 console.error("Unexpected response format from Gemini:", resp);
                 return res
@@ -423,36 +447,21 @@ app.post("/v1/chat/completions", async (req, res) => {
                         "Internal Server Error: Unexpected response format from Gemini",
                     );
             }
-
-            res.json({
-                id: "cmpl-5v8k3",
-                object: "chat.completion",
-                created: Math.floor(Date.now() / 1000),
-                model: request.model,
-                choices: [
-                    {
-                        message: {
-                            role: "assistant",
-                            content: responseText,
-                        },
-                        finish_reason: "stop",
-                        index: 0,
-                        logprobs: null,
-                    },
-                ],
-                usage: {
-                    prompt_tokens: promptTokenCount.totalTokens,
-                    completion_tokens:
-                        tokenUsage.totalTokens - promptTokenCount.totalTokens,
-                    total_tokens: tokenUsage.totalTokens,
-                },
-            });
         }
     } catch (error) {
         if (error.status === 429) {
             // Check for 429 status code
             res.status(503).send({
                 error: "Too many requests, please try again later.",
+            });
+        } else if (
+            error instanceof Error &&
+            error.message.includes("Text not available") &&
+            error.message.includes("Response was blocked due to")
+        ) {
+            // Handle blocked response without logging to console
+            res.status(400).send({
+                error: error.message,
             });
         } else {
             console.error("Chat Completions Error:", error);
