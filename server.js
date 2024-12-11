@@ -360,7 +360,6 @@ app.post("/v1/chat/completions", async (req, res) => {
 
             pipeline(readableStream, res).catch((err) => {
                 console.error("Pipeline error:", err);
-                res.status(500).send("Internal Server Error");
             });
 
             for await (const chunk of resp.stream) {
