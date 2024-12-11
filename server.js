@@ -346,46 +346,43 @@ app.post("/v1/chat/completions", async (req, res) => {
             },
         ];
 
-        let resp;
-
         if (request.stream) {
             const resp = await model.generateContentStream({
                 contents: contnts,
                 safetySettings: safeSett,
             });
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Transfer-Encoding', 'chunked');
 
-            const readableStream = new Readable({
-                read() {},
-            });
-
-            pipeline(readableStream, res).catch((err) => {
-                console.error("Pipeline error:", err);
-            });
-
-            for await (const chunk of resp.stream) {
-                readableStream.push(
-                    "data: " +
-                        JSON.stringify({
-                            id: "chatcmpl-abc123",
-                            object: "chat.completion.chunk",
-                            created: Math.floor(Date.now() / 1000),
-                            model: request.model,
-                            choices: [
-                                {
-                                    delta: {
-                                        role: "assistant",
-                                        content: chunk.text(),
+            try {
+                for await (const chunk of resp.stream) {
+                    res.write(
+                        "data: " +
+                            JSON.stringify({
+                                id: "chatcmpl-abc123",
+                                object: "chat.completion.chunk",
+                                created: Math.floor(Date.now() / 1000),
+                                model: request.model,
+                                choices: [
+                                    {
+                                        delta: {
+                                            role: "assistant",
+                                            content: chunk.text(),
+                                        },
+                                        finish_reason: null,
+                                        index: 0,
                                     },
-                                    finish_reason: null,
-                                    index: 0,
-                                },
-                            ],
-                        }) +
-                        "\n\n",
-                );
+                                ],
+                            }) +
+                            "\n\n",
+                    );
+                }
+                res.write("data: [DONE]\n\n");
+                res.end();
+            } catch (err) {
+                console.error("Stream error:", err);
+                res.status(500).send("Internal Server Error");
             }
-            readableStream.push("data: [DONE]\n\n");
-            readableStream.push(null);
         } else {
             // Prepare the prompt contents for token counting
             let promptContents = [];
@@ -406,7 +403,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             const promptTokenCount = await model.countTokens({
                 contents: promptContents,
             });
-            resp = await model.generateContent({
+            const resp = await model.generateContent({
                 contents: contnts,
                 safetySettings: safeSett,
             });
