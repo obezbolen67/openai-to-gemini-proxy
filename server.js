@@ -241,9 +241,11 @@ app.post("/v1/chat/completions", async (req, res) => {
                 newcontent.push({ text: message.content });
             } else {
                 for (let item of message.content) {
-                    if (item?.type === "text") {
+                    // Remove 'type' field
+                    if (item.text) {
                         newcontent.push({ text: item.text });
-                    } else if (item?.type === "image_url") {
+                    } else if (item.image_url) {
+                        // Remove 'image_url' field
                         if (
                             item.image_url.url.startsWith(
                                 "https://generativelanguage.googleapis.com/v1beta/files/",
@@ -252,7 +254,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                             newcontent.push({
                                 fileData: {
                                     fileUri: item.image_url.url,
-                                    mimeType: "image/png",
+                                    mimeType: "image/png", // Determine the correct mimeType
                                 },
                             });
                         } else {
@@ -263,11 +265,12 @@ app.post("/v1/chat/completions", async (req, res) => {
                             newcontent.push({
                                 inlineData: {
                                     data: imageData,
-                                    mimeType: "image/png",
+                                    mimeType: "image/png", // Determine the correct mimeType
                                 },
                             });
                         }
-                    } else if (item?.type === "audio_url") {
+                    } else if (item.audio_url) {
+                        // Remove 'audio_url' field
                         if (
                             item.audio_url.url.startsWith(
                                 "https://generativelanguage.googleapis.com/v1beta/files/",
@@ -276,7 +279,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                             newcontent.push({
                                 fileData: {
                                     fileUri: item.audio_url.url,
-                                    mimeType: "audio/mp3",
+                                    mimeType: "audio/mp3", // Determine the correct mimeType
                                 },
                             });
                         } else {
@@ -287,11 +290,12 @@ app.post("/v1/chat/completions", async (req, res) => {
                             newcontent.push({
                                 inlineData: {
                                     data: audioData,
-                                    mimeType: "audio/mp3",
+                                    mimeType: "audio/mp3", // Determine the correct mimeType
                                 },
                             });
                         }
-                    } else if (item?.type === "video_url") {
+                    } else if (item.video_url) {
+                        // Remove 'video_url' field
                         if (
                             !item.video_url.url.startsWith(
                                 "https://generativelanguage.googleapis.com/v1beta/files/",
@@ -307,7 +311,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                         newcontent.push({
                             fileData: {
                                 fileUri: item.video_url.url,
-                                mimeType: "video/mp4",
+                                mimeType: "video/mp4", // Determine the correct mimeType
                             },
                         });
                     }
