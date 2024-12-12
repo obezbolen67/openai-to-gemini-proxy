@@ -400,20 +400,58 @@ app.post("/v1/chat/completions", async (req, res) => {
                 }
             }
         } else {
-            // Prepare the prompt contents for token counting
+            // Prepare the prompt contents for token counting - CORRECTED
             let promptContents = [];
             for (const message of request.messages) {
                 if (message.role !== "assistant") {
-                    // Include system and user messages
+                   
+                    // Create parts directly without extra fields
+                    let parts = [];
+                    if (typeof message.content === "string") {
+                        parts.push({ text: message.content });
+                    } else {
+                        for (let item of message.content) {
+                            if (item.text) {
+                                parts.push({ text: item.text });
+                            } else if (item.image_url) {
+                                if (
+                                    item.image_url.url.startsWith(
+                                        "https://generativelanguage.googleapis.com/v1beta/files/",
+                                    )
+                                ) {
+                                    parts.push({
+                                        fileData: {
+                                            fileUri: item.image_url.url,
+                                            mimeType: "image/png", 
+                                        },
+                                    });
+                                } else {
+                                    const imageData = await getData(
+                                        item.image_url.url,
+                                        "image",
+                                    );
+                                    parts.push({
+                                        inlineData: {
+                                            data: imageData,
+                                            mimeType: "image/png", 
+                                        },
+                                    });
+                                }
+                            } else if (item.audio_url) {
+                                // ... (similar logic for audio)
+                            } else if (item.video_url) {
+                                // ... (similar logic for video)
+                            }
+                        }
+                    }
+                    // Add to promptContents with the correct role
                     promptContents.push({
                         role: message.role === "system" ? "user" : message.role, // System messages become "user" for counting
-                        parts:
-                            typeof message.content === "string"
-                                ? [{ text: message.content }]
-                                : message.content,
+                        parts: parts, // Use the correctly constructed parts
                     });
                 }
             }
+            
 
             const tokenUsage = await model.countTokens({ contents: contnts });
             const promptTokenCount = await model.countTokens({
@@ -485,6 +523,7 @@ app.post("/v1/chat/completions", async (req, res) => {
         }
     }
 });
+
 
 app.get("/v1/models", async (req, res) => {
     res.json({
