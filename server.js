@@ -355,6 +355,9 @@ app.post("/v1/chat/completions", async (req, res) => {
                 contents: contnts,
                 safetySettings: safeSett,
             });
+
+            console.log(resp);
+
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Transfer-Encoding', 'chunked');
 
@@ -461,6 +464,8 @@ app.post("/v1/chat/completions", async (req, res) => {
                 contents: contnts,
                 safetySettings: safeSett,
             });
+
+            console.log(resp);
 
             let responseText = "";
             if (
