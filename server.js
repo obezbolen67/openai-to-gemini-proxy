@@ -372,6 +372,8 @@ app.post("/v1/chat/completions", async (req, res) => {
                         } else {
                             text = chunk.candidates[0].content.parts[0].text;
                         }
+                    } else {
+                        text = chunk.candidates[0].content.parts[0].text;
                     }
                     res.write(
                         "data: " +
