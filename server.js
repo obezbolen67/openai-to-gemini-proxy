@@ -356,13 +356,23 @@ app.post("/v1/chat/completions", async (req, res) => {
                 safetySettings: safeSett,
             });
 
-            console.log(resp);
-
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Transfer-Encoding', 'chunked');
 
             try {
+                let th_resp = false;
                 for await (const chunk of resp.stream) {
+                    let text = "";
+                    if (modelName.includes("thinking")) {
+                        if (chunk.candidates[0].content.parts.length > 1) {
+                            th_resp = true;
+                            text = chunk.candidates[0].content.parts[1].text;
+                        } else if (!th_resp) {
+                            continue
+                        } else {
+                            text = chunk.candidates[0].content.parts[0].text;
+                        }
+                    }
                     res.write(
                         "data: " +
                             JSON.stringify({
@@ -374,7 +384,7 @@ app.post("/v1/chat/completions", async (req, res) => {
                                     {
                                         delta: {
                                             role: "assistant",
-                                            content: chunk.text(),
+                                            content: text,
                                         },
                                         finish_reason: null,
                                         index: 0,
@@ -465,7 +475,6 @@ app.post("/v1/chat/completions", async (req, res) => {
                 safetySettings: safeSett,
             });
 
-            console.log(resp);
 
             let responseText = "";
             if (
@@ -473,7 +482,8 @@ app.post("/v1/chat/completions", async (req, res) => {
                 resp.response &&
                 typeof resp.response.text === "function"
             ) {
-                responseText = resp.response.text();
+
+                responseText = modelName.includes("thinking") ? resp.response.candidates[0].content.parts[1].text : resp.response.text();
 
                 res.json({
                     id: "cmpl-5v8k3",
