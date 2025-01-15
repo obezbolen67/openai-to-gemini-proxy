@@ -347,7 +347,7 @@ app.post("/v1/chat/completions", async (req, res) => {
             {
                 category: HarmCategory.HARM_CATEGORY_HARASSMENT,
                 threshold: HarmBlockThreshold.BLOCK_NONE,
-            },
+            }
         ];
 
         if (request.stream) {
@@ -359,67 +359,50 @@ app.post("/v1/chat/completions", async (req, res) => {
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Transfer-Encoding', 'chunked');
 
-            try {
-                let th_resp = false;
-                for await (const chunk of resp.stream) {
-                    let text = "";
-                    if (modelName.includes("thinking")) {
-                        if (chunk.candidates[0].content.parts.length > 1) {
-                            th_resp = true;
-                            text = chunk.candidates[0].content.parts[1].text;
-                        } else if (!th_resp) {
-                            continue
-                        } else {
-                            text = chunk.candidates[0].content.parts[0].text;
-                        }
+            let th_resp = false;
+            for await (const chunk of resp.stream) {
+                let text = "";
+                console.log(chunk)
+                if (modelName.includes("thinking")) {
+                    if (chunk.candidates[0].content.parts.length > 1) {
+                        th_resp = true;
+                        text = chunk.candidates[0].content.parts[1].text;
+                    } else if (!th_resp) {
+                        continue
                     } else {
                         text = chunk.candidates[0].content.parts[0].text;
                     }
-                    res.write(
-                        "data: " +
-                            JSON.stringify({
-                                id: "chatcmpl-abc123",
-                                object: "chat.completion.chunk",
-                                created: Math.floor(Date.now() / 1000),
-                                model: request.model,
-                                choices: [
-                                    {
-                                        delta: {
-                                            role: "assistant",
-                                            content: text,
-                                        },
-                                        finish_reason: null,
-                                        index: 0,
-                                    },
-                                ],
-                            }) +
-                            "\n\n",
-                    );
-                }
-                res.write("data: [DONE]\n\n");
-                res.end();
-            } catch (err) {
-                // Error handling within the streaming section
-                if (
-                    err instanceof Error &&
-                    err.message.includes("Text not available") &&
-                    err.message.includes("Response was blocked due to")
-                ) {
-                    // Handle blocked response without logging to console
-                    res.status(400).send({
-                        error: err.message,
-                    });
                 } else {
-                    console.error("Stream error:", err);
-                    res.status(500).send("Internal Server Error");
+                    text = chunk.candidates[0].content.parts[0].text;
                 }
+                res.write(
+                    "data: " +
+                        JSON.stringify({
+                            id: "chatcmpl-abc123",
+                            object: "chat.completion.chunk",
+                            created: Math.floor(Date.now() / 1000),
+                            model: request.model,
+                            choices: [
+                                {
+                                    delta: {
+                                        role: "assistant",
+                                        content: text,
+                                    },
+                                    finish_reason: null,
+                                    index: 0,
+                                },
+                            ],
+                        }) +
+                        "\n\n",
+                );
             }
+            res.write("data: [DONE]\n\n");
+            res.end();
         } else {
             // Prepare the prompt contents for token counting - CORRECTED
             let promptContents = [];
             for (const message of request.messages) {
                 if (message.role !== "assistant") {
-                   
                     // Create parts directly without extra fields
                     let parts = [];
                     if (typeof message.content === "string") {
@@ -520,24 +503,12 @@ app.post("/v1/chat/completions", async (req, res) => {
             }
         }
     } catch (error) {
-        if (error.status === 429) {
-            // Check for 429 status code
-            res.status(503).send({
-                error: "Too many requests, please try again later.",
-            });
-        } else if (
-            error instanceof Error &&
-            error.message.includes("Text not available") &&
-            error.message.includes("Response was blocked due to")
-        ) {
-            // Handle blocked response without logging to console
-            res.status(400).send({
-                error: error.message,
-            });
-        } else {
-            console.error("Chat Completions Error:", error);
-            res.status(500).send(error.message || "Internal Server Error");
-        }
+        res.send({
+            error: {
+                message: error.message,
+                code: error.status 
+            }
+        });
     }
 });
 
