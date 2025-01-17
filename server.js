@@ -362,7 +362,6 @@ app.post("/v1/chat/completions", async (req, res) => {
             let th_resp = false;
             for await (const chunk of resp.stream) {
                 let text = "";
-                console.log(chunk)
                 if (modelName.includes("thinking")) {
                     if (chunk.candidates[0].content.parts.length > 1) {
                         th_resp = true;
