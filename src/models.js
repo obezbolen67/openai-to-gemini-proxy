@@ -2,8 +2,8 @@ const modelMap = {
   "gpt-4": "gemini-1.5-pro-latest",
   "gpt-4o": "gemini-2.0-flash-exp",
   "gpt-4o-mini": "gemini-2.0-flash-exp",
-  "o1-preview": "gemini-2.0-flash-thinking-exp-1219",
-  "o1": "gemini-2.0-flash-thinking-exp-1219"
+  "o1-preview": "gemini-2.0-flash-thinking-exp-01-21",
+  "o1": "gemini-2.0-flash-thinking-exp-01-21"
 };
 
 const modelsList = [
