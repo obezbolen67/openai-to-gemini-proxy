@@ -11,7 +11,7 @@ const modelsList = [
     created: 1677610602,
     object: "model",
     owned_by: "google",
-    id: "gemini-2.0-flash-thinking-exp-1219",
+    id: "gemini-2.0-flash-thinking-exp-01-21",
   },
   {
     created: 1677610602,
