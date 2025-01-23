@@ -350,7 +350,6 @@ app.post("/v1/chat/completions", async (req, res) => {
             }
         ];
 		
-		let th_resp = false;
         if (request.stream) {
             const resp = await model.generateContentStream({
                 contents: contnts,
@@ -361,19 +360,8 @@ app.post("/v1/chat/completions", async (req, res) => {
             res.setHeader('Transfer-Encoding', 'chunked');
 
             for await (const chunk of resp.stream) {
-                let text = "";
-                if (modelName.includes("thinking")) {
-                    if (chunk.candidates[0].content.parts.length > 1) {
-                        th_resp = true;
-                        text = chunk.candidates[0].content.parts[1].text;
-                    } else if (!th_resp) {
-                        continue
-                    } else {
-                        text = chunk.candidates[0].content.parts[0].text;
-                    }
-                } else {
-                    text = chunk.candidates[0].content.parts[0].text;
-                }
+                let text = chunk.candidates[0].content.parts[0].text;
+				
                 res.write(
                     "data: " +
                         JSON.stringify({
