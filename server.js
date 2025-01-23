@@ -349,7 +349,8 @@ app.post("/v1/chat/completions", async (req, res) => {
                 threshold: HarmBlockThreshold.BLOCK_NONE,
             }
         ];
-
+		
+		let th_resp = false;
         if (request.stream) {
             const resp = await model.generateContentStream({
                 contents: contnts,
@@ -359,7 +360,6 @@ app.post("/v1/chat/completions", async (req, res) => {
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Transfer-Encoding', 'chunked');
 
-            let th_resp = false;
             for await (const chunk of resp.stream) {
                 let text = "";
                 if (modelName.includes("thinking")) {
@@ -458,16 +458,14 @@ app.post("/v1/chat/completions", async (req, res) => {
                 contents: contnts,
                 safetySettings: safeSett,
             });
-
-
+			
             let responseText = "";
             if (
                 resp &&
                 resp.response &&
                 typeof resp.response.text === "function"
             ) {
-
-                responseText = modelName.includes("thinking") ? resp.response.candidates[0].content.parts[1].text : resp.response.text();
+                responseText = modelName.includes("thinking") ? resp.response.candidates[0].content.parts[0].text : resp.response.text();
 
                 res.json({
                     id: "cmpl-5v8k3",
